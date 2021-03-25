@@ -22,9 +22,9 @@ async function getHTML(files, options) {
     }
 
     files = _.flatten(
-        files.map(file => {
+        files.map((file) => {
             if (!isURL(file) && !isHTML(file)) {
-                return glob.sync(file).map(match => match.split('/').join(path.sep));
+                return glob.sync(file).map((match) => match.split('/').join(path.sep));
             }
             return file;
         })
@@ -36,7 +36,7 @@ async function getHTML(files, options) {
 
     // Save files for later reference.
     options.files = files;
-    return Promise.all(files.map(file => jsdom.fromSource(file, options)));
+    return Promise.all(files.map((file) => jsdom.fromSource(file, options)));
 }
 
 /**
@@ -53,7 +53,7 @@ async function getStylesheets(files, options, pages) {
     }
 
     /* Extract the stylesheets from the HTML */
-    const stylesheets = await Promise.all(pages.map(page => jsdom.getStylesheets(page.window, options)));
+    const stylesheets = await Promise.all(pages.map((page) => jsdom.getStylesheets(page.window, options)));
 
     return [files, options, pages, stylesheets];
 }
@@ -69,9 +69,9 @@ async function getStylesheets(files, options, pages) {
 function getCSS([files, options, pages, stylesheets]) {
     /* Ignore specified stylesheets */
     if (options.ignoreSheets.length) {
-        stylesheets = stylesheets.map(arr => {
-            return arr.filter(sheet => {
-                return _.every(options.ignoreSheets, ignore => {
+        stylesheets = stylesheets.map((arr) => {
+            return arr.filter((sheet) => {
+                return _.every(options.ignoreSheets, (ignore) => {
                     if (_.isRegExp(ignore)) {
                         return !ignore.test(sheet);
                     }
@@ -146,9 +146,9 @@ async function processWithTextApi([options, pages, stylesheets]) {
         throw utility.parseErrorMessage(err, cssStr);
     }
 
-    const [css, rep] = await uncss(pages, pcss, options.ignore);
+    const [css, rep] = await uncss(pages, pcss, options.ignore, options.ignoreJs);
     let newCssStr = '';
-    postcss.stringify(css, result => {
+    postcss.stringify(css, (result) => {
         newCssStr += result;
     });
 
@@ -204,6 +204,7 @@ function init(files, options, callback) {
             html: files,
             htmlRoot: null,
             ignore: [],
+            ignoreJs: [],
             ignoreSheets: [],
             inject: null,
             jsdom: jsdom.defaultOptions(),
@@ -227,13 +228,13 @@ function init(files, options, callback) {
 }
 
 function processAsPostCss(options, pages) {
-    return uncss(pages, options.rawPostCss, options.ignore);
+    return uncss(pages, options.rawPostCss, options.ignore, options.ignoreJs);
 }
 
 async function process(opts) {
     const pages = await getHTML(opts.html, opts);
-    const cleanup = result => {
-        pages.forEach(page => page.window.close());
+    const cleanup = (result) => {
+        pages.forEach((page) => page.window.close());
         return result;
     };
 
@@ -241,13 +242,10 @@ async function process(opts) {
         return processAsPostCss(opts, pages).then(cleanup);
     }
 
-    return getStylesheets(opts.files, opts, pages)
-        .then(getCSS)
-        .then(processWithTextApi)
-        .then(cleanup);
+    return getStylesheets(opts.files, opts, pages).then(getCSS).then(processWithTextApi).then(cleanup);
 }
 
-const postcssPlugin = postcss.plugin('uncss', opts => css => {
+const postcssPlugin = postcss.plugin('uncss', (opts) => (css) => {
     const options = _.merge(
         {
             usePostCssInternal: true,
