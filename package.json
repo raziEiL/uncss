@@ -1,6 +1,6 @@
 {
     "name": "@raz1el/uncss",
-    "version": "0.17.3",
+    "version": "0.17.4",
     "author": "Giakki",
     "description": "Remove unused CSS styles",
     "license": "MIT",
@@ -16,7 +16,7 @@
         "go": "mocha tests/selectors.js",
         "publish": "npm publish --access public"
     },
-    "main": "src/uncss.js  --reporter spec --slow 7500 --timeout 25000",
+    "main": "src/uncss.js",
     "bin": {
         "uncss": "bin/uncss"
     },
