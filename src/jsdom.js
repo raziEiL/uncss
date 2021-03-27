@@ -179,7 +179,7 @@ function getScriptSelectors(window) {
 
         if (!src) continue;
 
-        const script = fs.readFileSync(src);
+        const script = fs.readFileSync(src, "utf8");
         const regexClass = script.match(/classList\.add\((["'].*["'])/gm);
 
         for (const str of regexClass) {
