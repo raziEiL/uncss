@@ -10,39 +10,39 @@ const jsdom = require('./jsdom.js'),
  */
 const dePseudify = (() => {
     const ignoredPseudos = [
-            /* link */
-            ':link',
-            ':visited',
-            /* user action */
-            ':hover',
-            ':active',
-            ':focus',
-            ':focus-within',
-            /* UI element states */
-            ':enabled',
-            ':disabled',
-            ':checked',
-            ':indeterminate',
-            /* form validation */
-            ':required',
-            ':invalid',
-            ':valid',
-            /* pseudo elements */
-            '::first-line',
-            '::first-letter',
-            '::selection',
-            '::before',
-            '::after',
-            /* pseudo classes */
-            ':target',
-            /* CSS2 pseudo elements */
-            ':before',
-            ':after',
-            /* Vendor-specific pseudo-elements:
-             * https://developer.mozilla.org/ja/docs/Glossary/Vendor_Prefix
-             */
-            '::?-(?:moz|ms|webkit|o)-[a-z0-9-]+',
-        ],
+        /* link */
+        ':link',
+        ':visited',
+        /* user action */
+        ':hover',
+        ':active',
+        ':focus',
+        ':focus-within',
+        /* UI element states */
+        ':enabled',
+        ':disabled',
+        ':checked',
+        ':indeterminate',
+        /* form validation */
+        ':required',
+        ':invalid',
+        ':valid',
+        /* pseudo elements */
+        '::first-line',
+        '::first-letter',
+        '::selection',
+        '::before',
+        '::after',
+        /* pseudo classes */
+        ':target',
+        /* CSS2 pseudo elements */
+        ':before',
+        ':after',
+        /* Vendor-specific pseudo-elements:
+         * https://developer.mozilla.org/ja/docs/Glossary/Vendor_Prefix
+         */
+        '::?-(?:moz|ms|webkit|o)-[a-z0-9-]+',
+    ],
         // Actual regex is of the format: /^(:hover|:focus|...)$/i
         pseudosRegex = new RegExp(`^(${ignoredPseudos.join('|')})$`, 'i');
 
@@ -147,13 +147,12 @@ function filterEmptyAtRules(css) {
  * @param  {Object}   css           The postcss.Root node
  * @return {Promise}
  */
-function getUsedSelectors(page, css) {
+function getUsedSelectors(page, css, ignore) {
     let usedSelectors = [];
     css.walkRules((rule) => {
         usedSelectors = _.concat(usedSelectors, rule.selectors.map(dePseudify));
     });
-
-    return jsdom.findAll(page.window, usedSelectors);
+    return jsdom.findAll(page.window, usedSelectors, ignore);
 }
 
 /**
@@ -250,10 +249,9 @@ function filterUnusedRules(css, ignore, usedSelectors) {
  * @param  {Array}   ignore     List of selectors to be ignored
  * @return {Promise}
  */
-module.exports = async function uncss(pages, css, ignore, ignoreJs) {
-    const nestedUsedSelectors = await Promise.all(pages.map((page) => getUsedSelectors(page, css)));
+module.exports = async function uncss(pages, css, ignore) {
+    const nestedUsedSelectors = await Promise.all(pages.map((page) => getUsedSelectors(page, css, ignore)));
     const usedSelectors = _.flatten(nestedUsedSelectors);
-    usedSelectors.push(...ignoreJs);
     const filteredCss = filterUnusedRules(css, ignore, usedSelectors);
     const allSelectors = getAllSelectors(css);
     return [

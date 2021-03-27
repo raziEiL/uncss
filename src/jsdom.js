@@ -137,9 +137,10 @@ function getStylesheets(window, options) {
  * Filter unused selectors.
  * @param  {Object}  window A jsdom window
  * @param  {Array}   sels   List of selectors to be filtered
+ * @param  {Array}   ignore List of selectors to be ignored
  * @return {Array}
  */
-function findAll(window, sels) {
+function findAll(window, sels, ignore) {
     const { document } = window;
 
     // Unwrap noscript elements.
@@ -152,9 +153,11 @@ function findAll(window, sels) {
             ns.parentNode.insertBefore(child, ns);
         });
     });
-
+    // const ignored = getScriptSelectors(window).concat(ignore);
     // Do the filtering.
     return sels.filter((selector) => {
+        if (contain(selector, ignore))
+            return true;
         try {
             return document.querySelector(selector);
             // eslint-disable-next-line no-unused-vars
@@ -164,6 +167,51 @@ function findAll(window, sels) {
             return true;
         }
     });
+}
+
+function getScriptSelectors(window) {
+    const { document } = window,
+        selectors = [],
+        elements = document.querySelectorAll("script");
+    console.log(__dirname);
+    for (const element of elements) {
+        const src = element.getAttribute("src");
+
+        if (!src) continue;
+
+        const script = fs.readFileSync(src);
+        const regexClass = script.match(/classList\.add\((["'].*["'])/gm);
+
+        for (const str of regexClass) {
+            const match = str.match(/classList\.add\((["'].*["'])/);
+
+            if (match && match[1])
+                selectors.push(...match[1].replace(/["']+/g, "").split(",").map(s => "." + s.trim()));
+        }
+
+        const regexElem = script.match(/createElement\((["'].*["'])/gm);
+
+        for (const str of regexElem) {
+            const match = str.match(/createElement\((["'].*["'])/);
+
+            if (match && match[1])
+                selectors.push(match[1].replace(/["']+/g, ""));
+        }
+    }
+    return [...new Set(selectors)];
+}
+
+/**
+ * @param  {string}    selector  List of selectors to be filtered
+ * @param  {string[]}  ignore    List of selectors to be ignored
+ * @return {Boolean}
+ */
+function contain(selector, ignore) {
+    for (let i = 0; i < ignore.length; i++) {
+        if (new RegExp("^" + ignore[i].trim().replace(/^\./, "\\.")).test(selector))
+            return true;
+    }
+    return false;
 }
 
 module.exports = {
